@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MVP E-Commerce — Agner Loss · Movetech 2026</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+            color: #f1f5f9;
+        }
+        .subtitle {
+            font-size: 12px;
+            color: #64748b;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .pod-banner {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #0c1a2e;
+            border: 1px solid #1e3a5f;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 1.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #60a5fa;
+        }
+        .pod-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            flex-shrink: 0;
+            box-shadow: 0 0 6px #22c55e;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .pod-label { color: #475569; margin-right: 4px; }
+
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .card h2 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        input {
+            flex: 1;
+            padding: 10px 14px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #f1f5f9;
+            font-size: 14px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        input:focus { border-color: #0ea5e9; }
+        input::placeholder { color: #475569; }
+        input[type="number"] { max-width: 120px; }
+
+        button {
+            padding: 10px 20px;
+            background: #0ea5e9;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        button:hover { background: #0284c7; }
+        button:active { transform: scale(0.98); }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid #334155;
+            color: #64748b;
+            font-size: 12px;
+            padding: 6px 12px;
+        }
+        .btn-ghost:hover { color: #e2e8f0; border-color: #64748b; background: transparent; }
+
+        .btn-danger {
+            background: transparent;
+            border: 1px solid #7f1d1d;
+            color: #f87171;
+            font-size: 12px;
+            padding: 6px 12px;
+        }
+        .btn-danger:hover { background: #7f1d1d30; border-color: #f87171; }
+
+        .btn-delete-item {
+            background: transparent;
+            border: none;
+            color: #475569;
+            font-size: 16px;
+            padding: 0 6px;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+        .btn-delete-item:hover { color: #f87171; background: transparent; }
+
+        .msg {
+            font-size: 13px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+        .msg.ok  { background: #052e16; color: #4ade80; border: 1px solid #166534; }
+        .msg.err { background: #2d0a0a; color: #f87171; border: 1px solid #7f1d1d; }
+
+        .pedido-list { display: flex; flex-direction: column; gap: 8px; }
+        .pedido-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .pedido-id   { color: #475569; font-family: 'Courier New', monospace; font-size: 12px; min-width: 28px; }
+        .pedido-nome { flex: 1; padding: 0 12px; color: #f1f5f9; }
+        .pedido-qtd  {
+            background: #0ea5e920;
+            color: #0ea5e9;
+            border: 1px solid #0ea5e940;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            margin-right: 8px;
+        }
+        .empty { color: #475569; font-size: 13px; text-align: center; padding: 20px; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <h1>🛒 MVP E-Commerce</h1>
+    <p class="subtitle">Agner Loss Rodrigues · Movetech 2026</p>
+
+    <div class="pod-banner">
+        <div class="pod-dot"></div>
+        <span class="pod-label">POD:</span>
+        <span id="pod-name">carregando...</span>
+    </div>
+
+    <div class="card">
+        <h2>Adicionar Pedido</h2>
+        <div class="form-row">
+            <input type="text" id="produto" placeholder="Nome do produto" />
+            <input type="number" id="qtd" placeholder="Qtd" min="1" />
+            <button onclick="adicionarPedido()">Adicionar</button>
+        </div>
+        <div class="msg" id="msg"></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>Pedidos</h2>
+            <div style="display:flex; gap: 8px;">
+                <button class="btn-ghost" onclick="carregarPedidos()">↺ Atualizar</button>
+                <button class="btn-danger" onclick="limparTudo()">🗑 Limpar tudo</button>
+            </div>
+        </div>
+        <div class="pedido-list" id="lista">
+            <p class="empty">Carregando...</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    async function carregarPod() {
+        try {
+            const res = await fetch("/info");
+            const data = await res.json();
+            document.getElementById("pod-name").textContent = data.pod;
+        } catch(e) {
+            document.getElementById("pod-name").textContent = "indisponível";
+        }
+    }
+
+    async function carregarPedidos() {
+        const lista = document.getElementById("lista");
+        try {
+            const res = await fetch("/pedidos");
+            const pedidos = await res.json();
+            if (!pedidos.length) {
+                lista.innerHTML = '<p class="empty">Nenhum pedido ainda.</p>';
+                return;
+            }
+            lista.innerHTML = pedidos.map(p => `
+                <div class="pedido-item">
+                    <span class="pedido-id">#${p.id}</span>
+                    <span class="pedido-nome">${p.produto}</span>
+                    <span class="pedido-qtd">${p.quantidade} itens</span>
+                    <button class="btn-delete-item" onclick="deletarPedido(${p.id})" title="Remover">×</button>
+                </div>
+            `).join("");
+        } catch(e) {
+            lista.innerHTML = '<p class="empty">Erro ao carregar pedidos.</p>';
+        }
+    }
+
+    async function adicionarPedido() {
+        const produto = document.getElementById("produto").value.trim();
+        const qtd = parseInt(document.getElementById("qtd").value);
+
+        if (!produto || !qtd || qtd <= 0) {
+            showMsg("Preencha o produto e a quantidade corretamente.", "err");
+            return;
+        }
+
+        try {
+            const res = await fetch("/pedidos", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ produto, quantidade: qtd })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showMsg(data.mensagem, "ok");
+                document.getElementById("produto").value = "";
+                document.getElementById("qtd").value = "";
+                carregarPedidos();
+                carregarPod();
+            } else {
+                showMsg(data.erro || "Erro ao adicionar pedido.", "err");
+            }
+        } catch(e) {
+            showMsg("Erro de conexão com a API.", "err");
+        }
+    }
+
+    async function deletarPedido(id) {
+        try {
+            const res = await fetch(`/pedidos/${id}`, { method: "DELETE" });
+            const data = await res.json();
+            if (res.ok) {
+                carregarPedidos();
+                carregarPod();
+            } else {
+                showMsg(data.erro || "Erro ao remover pedido.", "err");
+            }
+        } catch(e) {
+            showMsg("Erro de conexão com a API.", "err");
+        }
+    }
+
+    async function limparTudo() {
+        if (!confirm("Tem certeza que quer remover todos os pedidos?")) return;
+        try {
+            const res = await fetch("/pedidos", { method: "DELETE" });
+            const data = await res.json();
+            if (res.ok) {
+                showMsg(data.mensagem, "ok");
+                carregarPedidos();
+            }
+        } catch(e) {
+            showMsg("Erro de conexão com a API.", "err");
+        }
+    }
+
+    function showMsg(texto, tipo) {
+        const msg = document.getElementById("msg");
+        msg.textContent = texto;
+        msg.className = `msg ${tipo}`;
+        msg.style.display = "block";
+        setTimeout(() => msg.style.display = "none", 4000);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("produto").addEventListener("keydown", e => {
+            if (e.key === "Enter") adicionarPedido();
+        });
+        carregarPedidos();
+        carregarPod();
+    });
+</script>
+</body>
+</html>
