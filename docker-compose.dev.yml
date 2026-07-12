@@ -1,0 +1,33 @@
+# Ambiente de DESENVOLVIMENTO LOCAL — espelha a arquitetura de produção
+# (DBaaS PostgreSQL 16 + Redis) sem gastar um centavo de cloud.
+#
+# Subir:    docker compose -f docker-compose.dev.yml up -d
+# Derrubar: docker compose -f docker-compose.dev.yml down
+# Zerar dados: docker compose -f docker-compose.dev.yml down -v
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ecommerce-postgres-dev
+    environment:
+      POSTGRES_USER: ecommerce
+      POSTGRES_PASSWORD: ecommerce
+      POSTGRES_DB: ecommerce
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecommerce"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: ecommerce-redis-dev
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:
