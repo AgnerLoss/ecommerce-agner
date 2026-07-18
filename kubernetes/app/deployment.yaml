@@ -32,13 +32,13 @@ spec:
       # Secret que autentica o cluster no registry privado da Magalu
       # pra conseguir baixar (pull) a imagem. Criado no cluster com:
       #   kubectl create secret docker-registry magalu-registry-secret ...
-      # imagePullSecrets:
-      # - name: magalu-registry-secret
+      imagePullSecrets:
+      - name: magalu-registry-secret
       containers:
       - name: ecommerce-app
         # No kind (teste local) trocamos por uma imagem local; no
         # grande final volta pra imagem do registry da Magalu.
-        image: ecommerce-web:local
+        image: container-registry.br-se1.magalu.cloud/ecommerce-agner/ecommerce-web:v4.1
         ports:
         - containerPort: 8080
 
