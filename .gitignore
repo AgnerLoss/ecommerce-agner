@@ -3,3 +3,8 @@ __pycache__/
 *.pyc
 .env
 .venv
+# Secrets reais nunca vao pro Git — apenas o .example versionado
+kubernetes/secret.yaml
+kubernetes/**/secret.yaml
+secret.yaml
+.env

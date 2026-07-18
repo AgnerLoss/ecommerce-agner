@@ -1,0 +1,101 @@
+# =============================================================
+# DEPLOYMENT — Aplicacao e-commerce (Flask + gunicorn, v4.0)
+# -------------------------------------------------------------
+# Imagem Chainguard multi-stage (~46MB, 0 CVE), roda nonroot.
+# 3 replicas: cada uma vira um pod, e o Service LoadBalancer
+# distribui trafego entre elas. O endpoint /info mostra qual
+# pod respondeu (via Redis) — prova visual do balanceamento.
+#
+# Pecas-chave deste manifesto:
+#   - imagePullSecrets: autentica no Container Registry privado
+#   - envFrom Secret: injeta as credenciais do DBaaS
+#   - env REDIS_HOST: aponta pro Service do Redis
+#   - resources.requests.cpu: OBRIGATORIO pro HPA calcular %
+#   - liveness/readiness: saude do pod (ver comentarios abaixo)
+# =============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecommerce-deployment
+  labels:
+    app: ecommerce
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ecommerce
+  template:
+    metadata:
+      labels:
+        app: ecommerce
+    spec:
+      # Secret que autentica o cluster no registry privado da Magalu
+      # pra conseguir baixar (pull) a imagem. Criado no cluster com:
+      #   kubectl create secret docker-registry magalu-registry-secret ...
+      # imagePullSecrets:
+      # - name: magalu-registry-secret
+      containers:
+      - name: ecommerce-app
+        # No kind (teste local) trocamos por uma imagem local; no
+        # grande final volta pra imagem do registry da Magalu.
+        image: ecommerce-web:local
+        ports:
+        - containerPort: 8080
+
+        # ---- Credenciais do banco: vem TODAS do Secret ----
+        # envFrom injeta cada chave do Secret como variavel de
+        # ambiente com o mesmo nome (DB_USER, DB_PASSWORD, etc.),
+        # exatamente o que o app.py le via os.getenv(...).
+        envFrom:
+        - secretRef:
+            name: ecommerce-db-secret
+
+        # ---- Redis: endereco do Service (nao e segredo) ----
+        env:
+        - name: REDIS_HOST
+          value: "redis-service"
+        - name: REDIS_PORT
+          value: "6379"
+
+        # ---- Resources ----
+        # requests = o que o pod PEDE garantido (base do calculo do HPA).
+        # limits   = teto que o pod NAO pode ultrapassar.
+        # Sem 'requests.cpu' o HPA por CPU nao funciona.
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+
+        # ---- LIVENESS PROBE ----
+        # Pergunta: "o processo esta VIVO/saudavel?"
+        # Se falhar repetido, o Kubernetes REINICIA o container.
+        # Usa /health (leve, nao toca em banco): se o Postgres cair,
+        # nao queremos reiniciar pods sadios — reiniciar nao conserta
+        # banco caido.
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+        # ---- READINESS PROBE ----
+        # Pergunta: "esse pod pode RECEBER trafego agora?"
+        # Se falhar, o pod sai do balanceamento (mas NAO e reiniciado).
+        # Aqui tambem usamos /health por simplicidade. Passo maduro
+        # seguinte (documentado pra sabatina): um readiness que valida
+        # a conexao com o DBaaS, pra so receber trafego quem consegue
+        # de fato atender /pedidos.
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3

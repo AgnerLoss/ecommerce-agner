@@ -1,0 +1,66 @@
+# =============================================================
+# REDIS — Contador de hits por pod (NAO e a fonte de verdade)
+# -------------------------------------------------------------
+# O Redis aqui existe so pra DEMONSTRAR o load balancing:
+# cada pod incrementa hits:<nome-do-pod>, e o endpoint /info
+# mostra a distribuicao. Se o Redis cair, o app continua
+# funcionando (degradacao graciosa ja tratada no app.py) —
+# por isso 1 replica basta e nao usamos storage persistente.
+#
+# A fonte de verdade dos pedidos e o PostgreSQL (DBaaS), nunca
+# o Redis.
+# =============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-deployment
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        # resources modestos: Redis de contador nao precisa de muito.
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "200m"
+            memory: "128Mi"
+        # Probes simples usando o proprio comando do Redis.
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 3
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service          # nome que o app.py procura (REDIS_HOST default)
+  labels:
+    app: redis
+spec:
+  type: ClusterIP               # so acessivel DENTRO do cluster — Redis nunca exposto
+  ports:
+  - port: 6379
+    targetPort: 6379
+  selector:
+    app: redis

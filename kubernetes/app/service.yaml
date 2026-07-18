@@ -1,0 +1,33 @@
+# =============================================================
+# SERVICE — Ponto de entrada estavel + LoadBalancer
+# -------------------------------------------------------------
+# Os pods sao efemeros (mudam de IP quando recriados). O Service
+# da um endereco fixo e distribui o trafego entre as replicas
+# prontas (as que passaram no readiness).
+#
+# type: LoadBalancer -> na Magalu provisiona um IP externo
+# publico. Na frente dele vai a Cloudflare (proxied), e o
+# Security Group libera so os IPs da Cloudflare.
+#
+# ATENCAO (aprendizado do curso): a plataforma Kubernetes v3 da
+# Magalu NAO deleta o LoadBalancer automaticamente quando o
+# cluster e removido — limpar manualmente via mgc CLI depois,
+# pra evitar cobranca fantasma.
+#
+# No kind (local) o LoadBalancer fica "pending" (nao ha nuvem
+# pra provisionar IP) — isso e ESPERADO. Pra testar local, usa-se
+# port-forward (ver README).
+# =============================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecommerce-service
+  labels:
+    app: ecommerce
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80              # porta externa (usuario acessa aqui)
+    targetPort: 8080      # porta do container (gunicorn)
+  selector:
+    app: ecommerce        # roteia pros pods com label app=ecommerce

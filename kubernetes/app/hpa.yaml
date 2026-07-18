@@ -1,0 +1,45 @@
+# =============================================================
+# HPA — Horizontal Pod Autoscaler
+# -------------------------------------------------------------
+# Ajusta o numero de replicas do Deployment automaticamente
+# conforme o uso de CPU:
+#   - minimo 3 pods (nunca menos, garante disponibilidade)
+#   - maximo 10 pods (teto pra nao estourar custo)
+#   - alvo: 50% de uso medio de CPU
+#
+# Como funciona: o HPA le a CPU media dos pods (via
+# metrics-server) e compara com o 'requests.cpu' do Deployment
+# (100m). Se a media passar de 50% do request de forma
+# sustentada, ele cria mais pods; se cair, remove.
+#
+# POR ISSO o Deployment PRECISA ter resources.requests.cpu —
+# sem ele o HPA nao tem base pra calcular a porcentagem.
+#
+# PRE-REQUISITO: o cluster precisa do metrics-server rodando.
+#   - No kind: instalar manualmente (ver README).
+#   - Na Magalu MKE: geralmente ja vem, mas confirmar.
+#
+# DEMO do grande final: rodar o Locust batendo no Service e
+# ver o HPA escalar de 3 -> N pods ao vivo:
+#   kubectl get hpa -w
+# =============================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ecommerce-hpa
+  labels:
+    app: ecommerce
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ecommerce-deployment   # aponta pro Deployment que vai escalar
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50    # alvo: 50% do requests.cpu

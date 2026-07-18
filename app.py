@@ -167,6 +167,13 @@ def limpar():
     db.session.commit()
     return jsonify({"mensagem": "Todos os pedidos foram removidos."}), 200
 
+@app.route("/health", methods=["GET"])
+def health():
+    # Health check simples para as probes do Kubernetes.
+    # Nao consulta banco nem Redis de proposito: liveness deve
+    # refletir "o processo esta vivo", nao "as dependencias estao
+    # ok" — senao um banco caido reiniciaria pods sadios em loop.
+    return jsonify({"status": "UP"}), 200
 
 with app.app_context():
     db.create_all()
