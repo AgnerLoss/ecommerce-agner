@@ -6,6 +6,8 @@ import redis
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
 
+from urllib.parse import quote_plus
+
 app = Flask(__name__)
 
 # ---------------------------------------------------------------
@@ -20,7 +22,7 @@ DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "ecommerce")
 
 app.config["SQLALCHEMY_DATABASE_URI"] = (
-    f"postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    f"postgresql+psycopg://{DB_USER}:{quote_plus(DB_PASSWORD)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
